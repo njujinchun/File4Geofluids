@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Revision Id: $Id: demo-krigingAckley.xml 6537 2010-02-24 14:13:01Z ilm $ -->
+<!-- This is a simple demo file that uses Kriging to model the 2D Ackley function -->
+<ToolboxConfiguration version="2015a">
+  <Plan>
+    <ContextConfig>default</ContextConfig>
+    <SUMO>default</SUMO>
+    <ModelBuilder>rbf</ModelBuilder>
+    <InitialDesign>dataset</InitialDesign>
+    <SequentialDesign>flola-voronoi</SequentialDesign>
+    <Run name="#simulator#_demo" repeat="1">
+      <Simulator>GCSRisk/GCSRisk.xml</Simulator>
+
+      <DataSource>matlab</DataSource>
+      <Measure type="LeaveOneOut" target="0.02" errorFcn="rootMeanSquareError" use="on"/>
+      <Outputs>
+        <Output name="y"/>
+      </Outputs>
+    </Run>
+  </Plan>
+
+  <ModelBuilder id="rbf" type="SequentialModelBuilder" combineOutputs="false">
+    <!-- Maximum number of models built before selecting new samples -->
+    <Option key="maximumRunLength" value="20"/>
+    <!-- Degeneration of score if a model gets older -->
+    <Option key="decay" value=".999"/>
+    <!-- Size of the best model history -->
+    <Option key="historySize" value="15"/>
+    <!-- One of best, last. When set to best the best `historySize' models are kept,
+		- - when set to last, the last `historySize' models are kept -->
+    <Option key="strategy" value="best"/>
+    <!-- <Option key="strategy" value="window"/> -->
+    <ModelFactory type="RBFFactory">
+      <!-- Bounds for the shape parameter -->
+      <Option key="multipleBasisFunctionsAllowed" value="false"/>
+      <!--BasisFunction>rbfGaussian</BasisFunction-->
+      <BasisFunction>rbfMultiquadric</BasisFunction>
+      <!--BasisFunction>rbfExponential</BasisFunction-->
+      <Option key="regression" value="0"/>
+
+      <Option key="solver" value="directFit"/>
+    </ModelFactory>
+  </ModelBuilder>
+  <!--BasisFunction id="rbfGaussian" type="BasisFunction" name="rbfGaussian">
+    <Parameter name="alpha" min=".1" max="5" scale="ln" duplicate="no"/>
+  </BasisFunction-->
+  <BasisFunction id="rbfMultiquadric" type="BasisFunction" name="rbfMultiquadric">
+    <Parameter name="alpha" min=".1" max="5" scale="ln" duplicate="no"/>
+  </BasisFunction>
+  <!--BasisFunction id="rbfExponential" type="BasisFunction" name="rbfExponential">
+    <Parameter name="alpha1" min=".1" max="5" scale="ln" duplicate="no"/>
+    <Parameter name="alpha2" min=".5" max="2" scale="lin" duplicate="no"/>
+  </BasisFunction-->
+
+  <ContextConfig id="default">
+    <OutputDirectory>output</OutputDirectory>
+    <Option key="parallelMode" value="off"/>
+    <PlotOptions>
+      <Option key="saveModels" value="false"/>
+      <Option key="plotModels" value="false"/>
+      <Option key="withContour" value="false"/>
+      <Option key="plotContour" value="false"/>
+      <Option key="outputType" value="png"/>
+    </PlotOptions>
+    <Option key="keepOldModels" value="off"/>
+    <Path></Path>
+    <Profiling>
+      <Profiler name=".*" enabled="true">
+        <Output type="toTable"/>
+        <!--Output type="toImage"/-->
+        <Output type="toFile"/>
+        <Output type="toPanel"/>
+      </Profiler>
+    </Profiling>
+  </ContextConfig>
+  <Logging>
+    <RootLogger>
+      <Option key="runsInMainLog" value="true"/>
+      <Option key="Level" value="INFO"/>
+      <Handlers>
+        <ConsoleHandler>
+          <Option key="Level" value="INFO"/>
+        </ConsoleHandler>
+        <FileHandler>
+          <Option key="Level" value="ALL"/>
+        </FileHandler>
+      </Handlers>
+    </RootLogger>
+    <Option key="iminds.sumo" value="FINEST"/>
+    <Option key="Matlab" value="FINEST"/>
+  </Logging>
+  <SUMO id="default" type="SUMO">
+    <Option key="createMovie" value="yes"/>
+    <Option key="minimumTotalSamples" value="0"/>
+    <Option key="maximumTotalSamples" value="150"/>
+    <Option key="maximumTime" value="Inf"/>
+    <Option key="maxModelingIterations" value="Inf"/>
+    <Option key="randomSeed" value="0"/>
+    <Option key="stopOnError" value="true"/>
+    <Option key="minimumInitialSamples" value="100%"/>
+    <Option key="maximumSamples" value="9"/>
+    <Option key="minimumSamples" value="9"/>
+  </SUMO>
+
+  <!--Measure type="ValidationSet" target=".001">
+	<Option key="type" value="file"/>
+	<DataSource id="scatteredDataset" type="iminds.sumo.datasources.datasets.ScatteredDatasetDataSource"/>
+  </Measure-->
+
+<DataSource id="matlab" type="MatlabDirectDataSource" />
+  <!-- A highly adaptive sampling algorithm, error and density based -->
+    <SequentialDesign id="flola-voronoi" type="LOLAVoronoiSequentialDesign" combineOutputs="false">
+        <!-- Number of frequency values returned for each submitted sample. Only used with auto-sampled inputs. -->
+        <Option key="frequencies" value="11"/>
+        <!-- Distance metric to use. Note: distance metrics of the individual rankers will be overruled! -->
+        <Distance type="EuclideanDistance" />
+
+        <ExploitationSampleRanker type="FLOLASampleRanker">
+            <Option key="K" value="12" />
+            <Option key="L" value="2" />
+        </ExploitationSampleRanker>
+        <ExplorationSampleRanker type="VoronoiSampleRanker" />
+    </SequentialDesign>
+  <!-- LOLA sample selector combined with error based sample selector (default) -->
+  <!--InitialDesign id="factorial" type="FactorialDesign">
+			<Option key="levels" value="5" />
+		</InitialDesign-->
+  <InitialDesign id="dataset" type="DatasetDesign">
+    <!-- Where should we load the dataset from? -->
+    <Option key="filename" value="/home/shi_1/moshaoxing/SUMO-Toolbox-2016b/sumo-toolbox/examples/GCSRisk/initXY.dat"/>
+    <!-- Does the dataset also contain responses? (instead of only the inputs)
+		     If so, hasOutputs must be set to yes and the range of the inputs in the file must
+		     match the range of the simulator.  If not, the range of the inputs must be [-1 1].
+		-->
+    <Option key="hasOutputs" value="yes"/>
+  </InitialDesign>
+</ToolboxConfiguration>
+
